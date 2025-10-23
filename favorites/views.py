@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from .models import Dish
 
 # Views that render templates in the project's templates/ directory.
 def index(request):
@@ -22,7 +23,8 @@ def card3(request):
 
 
 def lk(request):
-	return render(request, 'lk.html')
+	dishes = Dish.objects.all()
+	return render(request, 'lk.html', {'dishes': dishes})
 
 
 def order(request):
