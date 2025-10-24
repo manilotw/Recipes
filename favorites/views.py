@@ -7,7 +7,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
 from .forms import UserUpdateForm, MealTariffForm
+from django import forms
 from .models import MealTariff
+from .models import UserProfile
 
 
 def index(request):
@@ -57,10 +59,15 @@ def registration(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, f'Добро пожаловать, {user.first_name}!')
-            return redirect('favorites:lk')
+            try:
+                user = form.save()
+                login(request, user)
+                messages.success(request, f'Добро пожаловать, {user.first_name}!')
+                return redirect('favorites:lk')
+            except forms.ValidationError as e:
+                form.add_error(None, e)
+            except Exception as e:
+                form.add_error(None, f'Произошла непредвиденная ошибка: {str(e)}')
     else:
         form = CustomUserCreationForm()
 
@@ -74,17 +81,13 @@ def auth_view(request):
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            email = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, username=email, password=password)
+            user = form.get_user()
             if user is not None:
                 login(request, user)
                 messages.success(request, f'Добро пожаловать, {user.first_name}!')
                 return redirect('favorites:lk')
-            else:
-                messages.error(request, 'Неверный email или пароль')
         else:
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
+            pass
     else:
         form = CustomAuthenticationForm()
 
@@ -93,7 +96,6 @@ def auth_view(request):
 
 def logout_view(request):
     logout(request)
-    messages.info(request, 'Вы вышли из системы')
     return redirect('favorites:auth')
 
 
@@ -106,10 +108,14 @@ def lk(request):
             request.user.save()
             messages.success(request, 'Имя успешно изменено!')
             return redirect('favorites:lk')
-    
+
     dishes = Dish.objects.filter(is_active=True)
+
+    user_profile = UserProfile.objects.get_or_create(user=request.user)
+
     context = {
         'dishes': dishes,
-        'user': request.user
+        'user': request.user,
+        'user_profile': user_profile
     }
     return render(request, 'lk.html', context)

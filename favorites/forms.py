@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserChangeForm
 from .models import MealTariff
+from .models import UserProfile
 
 
 class MealTariffForm(forms.ModelForm):
@@ -40,14 +41,37 @@ class CustomUserCreationForm(UserCreationForm):
         self.fields['password1'].widget.attrs.update({'class': 'form-control'})
         self.fields['password2'].widget.attrs.update({'class': 'form-control'})
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Пользователь с таким email уже существует.")
+        return email
+
     def save(self, commit=True):
-        user = super().save(commit=False)
-        user.username = self.cleaned_data['email']
-        user.email = self.cleaned_data['email']
-        user.first_name = self.cleaned_data['first_name']
-        if commit:
-            user.save()
-        return user
+        try:
+            user = super().save(commit=False)
+            email = self.cleaned_data['email']
+            base_username = email.split('@')[0]
+            username = base_username
+            counter = 1
+
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+                if counter > 100:
+                    import uuid
+                    username = f"{base_username}_{uuid.uuid4().hex[:8]}"
+                    break
+
+            user.username = username
+            user.email = email
+            user.first_name = self.cleaned_data['first_name']
+            if commit:
+                user.save()
+                UserProfile.objects.get_or_create(user=user)
+            return user
+        except Exception as e:
+            raise forms.ValidationError(f"Ошибка при создании пользователя: {str(e)}")
 
 
 class CustomAuthenticationForm(AuthenticationForm):
@@ -57,6 +81,21 @@ class CustomAuthenticationForm(AuthenticationForm):
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Пароль'})
     )
+
+    def clean(self):
+        email = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if email and password:
+            try:
+                user = User.objects.get(email=email)
+                if user.check_password(password):
+                    self.user_cache = user
+                else:
+                    raise forms.ValidationError("Неверный email или пароль")
+            except User.DoesNotExist:
+                raise forms.ValidationError("Неверный email или пароль")
+        return self.cleaned_data
 
 
 class UserUpdateForm(UserChangeForm):
