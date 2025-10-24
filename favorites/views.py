@@ -109,7 +109,19 @@ def lk(request):
             messages.success(request, 'Имя успешно изменено!')
             return redirect('favorites:lk')
 
-    dishes = Dish.objects.filter(is_active=True)
+    if request.method == 'GET':
+        max_price = request.GET.get('max_price')
+
+        dishes = Dish.objects.filter(is_active=True)
+
+        if max_price:
+            try:
+                max_price = float(max_price)
+                dishes = dishes.filter(total_price__lte=max_price)
+            except ValueError:
+                pass
+    else:
+        dishes = Dish.objects.all(is_active=True)
 
     user_profile = UserProfile.objects.get_or_create(user=request.user)
 

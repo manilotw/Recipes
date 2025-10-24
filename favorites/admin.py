@@ -203,7 +203,7 @@ class MealTariffAdmin(admin.ModelAdmin):
         ])
 
     def get_username(self, obj):
-        return obj.user_profile.user.username
+        return obj.user.username
     get_username.short_description = 'Пользователь'
 
 admin.site.unregister(User)
