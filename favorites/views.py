@@ -6,6 +6,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
+from .forms import UserUpdateForm
 
 
 def index(request):
@@ -77,7 +78,14 @@ def logout_view(request):
 
 @login_required
 def lk(request):
-
+    if request.method == 'POST':
+        new_first_name = request.POST.get('first_name')
+        if new_first_name:
+            request.user.first_name = new_first_name
+            request.user.save()
+            messages.success(request, 'Имя успешно изменено!')
+            return redirect('favorites:lk')
+    
     dishes = Dish.objects.filter(is_active=True)
     context = {
         'dishes': dishes,
