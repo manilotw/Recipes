@@ -175,3 +175,18 @@ def update_dish_nutrition(sender, instance, **kwargs):
     instance.dish.total_price = instance.dish.calculate_total_price()
     instance.dish.save()
 
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Создает профиль пользователя автоматически при создании пользователя"""
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Сохраняет профиль пользователя при сохранении пользователя"""
+    if hasattr(instance, 'userprofile'):
+        instance.userprofile.save()
+    else:
+        UserProfile.objects.get_or_create(user=instance)
