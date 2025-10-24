@@ -6,7 +6,8 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
-from .forms import UserUpdateForm
+from .forms import UserUpdateForm, MealTariffForm
+from .models import MealTariff
 
 
 def index(request):
@@ -26,7 +27,27 @@ def card3(request):
 
 
 def order(request):
-    return render(request, 'order.html')
+    # show order form (GET) and process tariff creation (POST)
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            messages.error(request, 'Пожалуйста, войдите в систему, чтобы оформить тариф')
+            return redirect('favorites:auth')
+
+        form = MealTariffForm(request.POST)
+        if form.is_valid():
+            tariff = form.save(commit=False)
+            # attach tariff to the authenticated User instance
+            tariff.user = request.user
+            tariff.save()
+            messages.success(request, 'Тариф успешно создан и сохранён')
+            return redirect('favorites:lk')
+        else:
+            messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
+            return render(request, 'order.html', {'form': form})
+
+    # GET
+    form = MealTariffForm()
+    return render(request, 'order.html', {'form': form})
 
 
 def registration(request):
