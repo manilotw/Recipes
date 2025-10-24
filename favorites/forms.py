@@ -2,6 +2,22 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserChangeForm
+from .models import MealTariff
+
+
+class MealTariffForm(forms.ModelForm):
+    class Meta:
+        model = MealTariff
+        fields = [
+            'name', 'period', 'persons',
+            'breakfast', 'lunch', 'dinner', 'desserts',
+            'allergy_fish', 'allergy_meat', 'allergy_grains', 'allergy_honey', 'allergy_nuts', 'allergy_dairy'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название тарифа'}),
+            'period': forms.Select(attrs={'class': 'form-select'}),
+            'persons': forms.Select(attrs={'class': 'form-select'}),
+        }
 
 
 class CustomUserCreationForm(UserCreationForm):

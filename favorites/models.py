@@ -136,9 +136,42 @@ class DishIngredient(models.Model):
     def __str__(self):
         return f'{self.ingredient.name} для {self.dish.name}'
 
+class MealTariff(models.Model):
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    PERIOD_CHOICES = [
+        ('1m', '1 month'),
+        ('3m', '3 months'),
+        ('6m', '6 months'),
+    ]
+
+    # Основные параметры
+    name = models.CharField(max_length=100, default='Standard Plan', verbose_name='Название тарифа')
+    period = models.CharField(max_length=2, choices=PERIOD_CHOICES, default='1m', verbose_name='Срок')
+    persons = models.PositiveIntegerField(default=1, verbose_name='Количество персон')
+
+    # Включенные приёмы пищи
+    breakfast = models.BooleanField(default=False, verbose_name='Завтраки')
+    lunch = models.BooleanField(default=False, verbose_name='Обеды')
+    dinner = models.BooleanField(default=False, verbose_name='Ужины')
+    desserts = models.BooleanField(default=False, verbose_name='Десерты')
+
+    # Аллергии (чекбоксы)
+    allergy_fish = models.BooleanField(default=False, verbose_name='Рыба и морепродукты')
+    allergy_meat = models.BooleanField(default=False, verbose_name='Мясо')
+    allergy_grains = models.BooleanField(default=False, verbose_name='Зерновые')
+    allergy_honey = models.BooleanField(default=False, verbose_name='Продукты пчеловодства')
+    allergy_nuts = models.BooleanField(default=False, verbose_name='Орехи и бобовые')
+    allergy_dairy = models.BooleanField(default=False, verbose_name='Молочные продукты')
+
+    def __str__(self):
+        return f'{self.name} ({self.get_period_display()})'
+
 
 @receiver([post_save, post_delete], sender=DishIngredient)
 def update_dish_nutrition(sender, instance, **kwargs):
     instance.dish.total_calories = instance.dish.calculate_total_calories()
     instance.dish.total_price = instance.dish.calculate_total_price()
     instance.dish.save()
+

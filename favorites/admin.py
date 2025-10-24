@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
-from .models import UserProfile, Dish, Ingredient, DishIngredient
+from .models import UserProfile, Dish, Ingredient, DishIngredient, MealTariff
 
 
 def format_currency(value):
@@ -163,6 +163,48 @@ class DishIngredientAdmin(admin.ModelAdmin):
         return '0 ккал'
     get_calories_contribution.short_description = 'Калорийность'
 
+@admin.register(MealTariff)
+class MealTariffAdmin(admin.ModelAdmin):
+    list_display = (
+        'get_username',
+        'period',
+        'persons',
+        'breakfast',
+        'lunch',
+        'dinner',
+        'desserts',
+        'has_allergies',
+    )
+    list_filter = (
+        'period',
+        'breakfast',
+        'lunch',
+        'dinner',
+        'desserts',
+        'allergy_fish',
+        'allergy_meat',
+        'allergy_grains',
+        'allergy_honey',
+        'allergy_nuts',
+        'allergy_dairy',
+    )
+    search_fields = ('user_profile__user__username',)
+    list_select_related = ('user',)
+
+    @admin.display(description='Есть аллергии')
+    def has_allergies(self, obj):
+        return any([
+            obj.allergy_fish,
+            obj.allergy_meat,
+            obj.allergy_grains,
+            obj.allergy_honey,
+            obj.allergy_nuts,
+            obj.allergy_dairy,
+        ])
+
+    def get_username(self, obj):
+        return obj.user_profile.user.username
+    get_username.short_description = 'Пользователь'
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
