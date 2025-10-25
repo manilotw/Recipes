@@ -11,4 +11,5 @@ urlpatterns = [
     path('order/', views.order, name='order'),
     path('registration/', views.registration, name='registration'),
     path('logout/', views.logout_view, name='logout'),
+    path('replace-dish/<str:meal_type>/', views.replace_dish, name='replace_dish'),
 ]

@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
+from django.utils import timezone
+from datetime import timedelta
 
 
 class UserProfile(models.Model):
@@ -24,8 +26,24 @@ class UserProfile(models.Model):
 
     meal_swaps_remaining = models.PositiveIntegerField(default=3, verbose_name='Количество замен')
 
+    last_swap_reset = models.DateTimeField(
+        auto_now_add=True, 
+        verbose_name='Последнее обновление замен'
+    )
+
     def __str__(self):
         return f'Профиль {self.user.username}'
+
+    def reset_swaps_if_needed(self):
+        now = timezone.now()
+        time_since_reset = now - self.last_swap_reset
+
+        if time_since_reset >= timedelta(hours=24):
+            self.meal_swaps_remaining = 3
+            self.last_swap_reset = now
+            self.save()
+            return True
+        return False
 
 
 class Dish(models.Model):
@@ -143,8 +161,8 @@ class DishIngredient(models.Model):
     def __str__(self):
         return f'{self.ingredient.name} для {self.dish.name}'
 
-class MealTariff(models.Model):
 
+class MealTariff(models.Model):
     # enforce one tariff per user at DB level
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_tariff')
 
@@ -185,6 +203,22 @@ class MealTariff(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.get_period_display()})'
+
+
+class UserDailyMenu(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_menus')
+    date = models.DateField(auto_now_add=True, verbose_name='Дата меню')
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, verbose_name='Блюдо')
+    meal_type = models.CharField(max_length=20, choices=Dish.MEAL_TYPES, verbose_name='Тип приема пищи')
+    is_active = models.BooleanField(default=True, verbose_name='Активно')
+
+    class Meta:
+        unique_together = ['user', 'date', 'meal_type']
+        verbose_name = 'Ежедневное меню пользователя'
+        verbose_name_plural = 'Ежедневные меню пользователей'
+
+    def __str__(self):
+        return f'{self.user.username} - {self.date} - {self.get_meal_type_display()}'
 
 
 @receiver([post_save, post_delete], sender=DishIngredient)

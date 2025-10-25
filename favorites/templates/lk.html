@@ -106,38 +106,171 @@
                                             <button type="submit" class="btn btn-outline-success foodplan_green foodplan__border_green">Применить</button>
                                         </form>
                                     </div>
-
-                                    {% for dish in dishes %}
-                                        <div class="row mb-3">
-                                            <div class="col-2">
-                                                <a href="{% url 'favorites:card' pk=dish.pk %}">
-                                                    <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="w-100">
-                                                </a>
-                                                
-                                            </div>
-                                            <div class="col-10 col-md-10">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <h2>{{ dish.name }}</h2>
-                                                    </div>
-                                                    <div class="col-md-12 col-lg-9">
-                                                        <h6>{{ dish.description }}</h6>
-                                                    </div>
-                                                    <div class="col-md-12 col-lg-3 text-muted d-flex flex-column justify-content-between">
-                                                        <div class="d-flex flex-row justify-content-between">
-                                                            <small>Цена:</small><small>{{ dish.total_price }}</small>
+                                    <div class="mb-3">
+                                            <small class="text-muted">
+                                                Меню на {{ today }} | 
+                                                Доступно замен: {{ user_profile.meal_swaps_remaining }} |
+                                                Следующее обновление: {{ user_profile.last_swap_reset|date:"H:i" }}
+                                            </small>
+                                        </div>
+                                        {% if menu_by_meal_type.BREAKFAST %}
+                                        <div class="mb-4">
+                                            <h4 class="foodplan_green">Завтрак</h4>
+                                            {% for menu_item in menu_by_meal_type.BREAKFAST %}
+                                            <div class="row mb-3">
+                                                <div class="col-2">
+                                                    <a href="{% url 'favorites:card' pk=menu_item.dish.pk %}">
+                                                        <img src="{{ menu_item.dish.image.url }}" alt="{{ menu_item.dish.name }}" class="w-100">
+                                                    </a>
+                                                </div>
+                                                <div class="col-8">
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <h5>{{ menu_item.dish.name }}</h5>
                                                         </div>
-                                                        <div class="d-flex flex-row justify-content-between">
-                                                            <small>Калории:</small><small>{{ dish.total_calories }}</small>
+                                                        <div class="col-12">
+                                                            <p class="mb-1">{{ menu_item.dish.description }}</p>
+                                                        </div>
+                                                        <div class="col-12 text-muted">
+                                                            <small>Цена: {{ menu_item.dish.total_price }} руб.</small> | 
+                                                            <small>Калории: {{ menu_item.dish.total_calories }} ккал</small>
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <div class="col-2 d-flex align-items-center">
+                                                    {% if user_profile.meal_swaps_remaining > 0 %}
+                                                    <form method="post" action="{% url 'favorites:replace_dish' meal_type='BREAKFAST' %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Заменить</button>
+                                                    </form>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">Нет замен</span>
+                                                    {% endif %}
+                                                </div>
                                             </div>
+                                            {% endfor %}
                                         </div>
-                                    {% endfor %}
+                                        {% endif %}
+
+                                        {% if menu_by_meal_type.LUNCH %}
+                                        <div class="mb-4">
+                                            <h4 class="foodplan_green">Обед</h4>
+                                            {% for menu_item in menu_by_meal_type.LUNCH %}
+                                            <div class="row mb-3">
+                                                <div class="col-2">
+                                                    <a href="{% url 'favorites:card' pk=menu_item.dish.pk %}">
+                                                        <img src="{{ menu_item.dish.image.url }}" alt="{{ menu_item.dish.name }}" class="w-100">
+                                                    </a>
+                                                </div>
+                                                <div class="col-8">
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <h5>{{ menu_item.dish.name }}</h5>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <p class="mb-1">{{ menu_item.dish.description }}</p>
+                                                        </div>
+                                                        <div class="col-12 text-muted">
+                                                            <small>Цена: {{ menu_item.dish.total_price }} руб.</small> | 
+                                                            <small>Калории: {{ menu_item.dish.total_calories }} ккал</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-2 d-flex align-items-center">
+                                                    {% if user_profile.meal_swaps_remaining > 0 %}
+                                                    <form method="post" action="{% url 'favorites:replace_dish' meal_type='LUNCH' %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Заменить</button>
+                                                    </form>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">Нет замен</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+
+                                        {% if menu_by_meal_type.DINNER %}
+                                        <div class="mb-4">
+                                            <h4 class="foodplan_green">Ужин</h4>
+                                            {% for menu_item in menu_by_meal_type.DINNER %}
+                                            <div class="row mb-3">
+                                                <div class="col-2">
+                                                    <a href="{% url 'favorites:card' pk=menu_item.dish.pk %}">
+                                                        <img src="{{ menu_item.dish.image.url }}" alt="{{ menu_item.dish.name }}" class="w-100">
+                                                    </a>
+                                                </div>
+                                                <div class="col-8">
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <h5>{{ menu_item.dish.name }}</h5>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <p class="mb-1">{{ menu_item.dish.description }}</p>
+                                                        </div>
+                                                        <div class="col-12 text-muted">
+                                                            <small>Цена: {{ menu_item.dish.total_price }} руб.</small> | 
+                                                            <small>Калории: {{ menu_item.dish.total_calories }} ккал</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-2 d-flex align-items-center">
+                                                    {% if user_profile.meal_swaps_remaining > 0 %}
+                                                    <form method="post" action="{% url 'favorites:replace_dish' meal_type='DINNER' %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Заменить</button>
+                                                    </form>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">Нет замен</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+
+                                        {% if menu_by_meal_type.SNACK %}
+                                        <div class="mb-4">
+                                            <h4 class="foodplan_green">Десерты</h4>
+                                            {% for menu_item in menu_by_meal_type.SNACK %}
+                                            <div class="row mb-3">
+                                                <div class="col-2">
+                                                    <a href="{% url 'favorites:card' pk=menu_item.dish.pk %}">
+                                                        <img src="{{ menu_item.dish.image.url }}" alt="{{ menu_item.dish.name }}" class="w-100">
+                                                    </a>
+                                                </div>
+                                                <div class="col-8">
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <h5>{{ menu_item.dish.name }}</h5>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <p class="mb-1">{{ menu_item.dish.description }}</p>
+                                                        </div>
+                                                        <div class="col-12 text-muted">
+                                                            <small>Цена: {{ menu_item.dish.total_price }} руб.</small> | 
+                                                            <small>Калории: {{ menu_item.dish.total_calories }} ккал</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-2 d-flex align-items-center">
+                                                    {% if user_profile.meal_swaps_remaining > 0 %}
+                                                    <form method="post" action="{% url 'favorites:replace_dish' meal_type='SNACK' %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">Заменить</button>
+                                                    </form>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">Нет замен</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                            
                     </div>
                 </div>
             </div>
