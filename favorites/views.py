@@ -29,16 +29,19 @@ def card3(request):
 
 
 def order(request):
-    # show order form (GET) and process tariff creation (POST)
+
     if request.method == 'POST':
         if not request.user.is_authenticated:
             messages.error(request, 'Пожалуйста, войдите в систему, чтобы оформить тариф')
             return redirect('favorites:auth')
 
+        if MealTariff.objects.filter(user=request.user).exists():
+            messages.error(request, 'У вас уже есть тариф — нельзя создать ещё один.')
+            return redirect('favorites:lk')
+
         form = MealTariffForm(request.POST)
         if form.is_valid():
             tariff = form.save(commit=False)
-            # attach tariff to the authenticated User instance
             tariff.user = request.user
             tariff.save()
             messages.success(request, 'Тариф успешно создан и сохранён')
@@ -47,7 +50,10 @@ def order(request):
             messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
             return render(request, 'order.html', {'form': form})
 
-    # GET
+    if request.user.is_authenticated and MealTariff.objects.filter(user=request.user).exists():
+        messages.info(request, 'У вас уже есть активный тариф. Вы не можете создать новый.')
+        return redirect('favorites:lk')
+
     form = MealTariffForm()
     return render(request, 'order.html', {'form': form})
 
@@ -107,27 +113,45 @@ def lk(request):
             request.user.first_name = new_first_name
             request.user.save()
             messages.success(request, 'Имя успешно изменено!')
-            return redirect('favorites:lk')
+        return redirect('favorites:lk')
 
-    if request.method == 'GET':
-        max_price = request.GET.get('max_price')
-
-        dishes = Dish.objects.filter(is_active=True)
-
-        if max_price:
-            try:
-                max_price = float(max_price)
-                dishes = dishes.filter(total_price__lte=max_price)
-            except ValueError:
-                pass
+    if not  MealTariff.objects.filter(user=request.user).exists():
+        
+        return  redirect('favorites:order')
     else:
-        dishes = Dish.objects.all(is_active=True)
+        if request.method == 'GET':
+            max_price = request.GET.get('max_price')
+            
+            user_tariff = MealTariff.objects.get(user=request.user)
 
-    user_profile = UserProfile.objects.get_or_create(user=request.user)
+            dishes = Dish.objects.filter(is_active=True, diet_type=user_tariff.diet_type)
 
-    context = {
-        'dishes': dishes,
-        'user': request.user,
-        'user_profile': user_profile
-    }
-    return render(request, 'lk.html', context)
+            if max_price:
+                try:
+                    max_price = float(max_price)
+                    dishes = dishes.filter(total_price__lte=max_price)
+                except ValueError:
+                    pass
+            if user_tariff.allergy_fish:
+                dishes = dishes.exclude(name__icontains='Рыба')
+            if user_tariff.allergy_meat:
+                dishes = dishes.exclude(name__icontains='Мясо')
+            if user_tariff.allergy_grains:
+                dishes = dishes.exclude(name__icontains='Зерн')
+            if user_tariff.allergy_honey:
+                dishes = dishes.exclude(name__icontains='Мед')
+            if user_tariff.allergy_nuts:
+                dishes = dishes.exclude(name__icontains='Орех')
+            if user_tariff.allergy_dairy:
+                dishes = dishes.exclude(name__icontains='Молоко')
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+            context = {
+                'dishes': dishes,
+                'user': request.user,
+                'user_profile': user_profile,
+                'user_tariff': user_tariff  
+            }
+
+            return render(request, 'lk.html', context)
+

@@ -68,10 +68,11 @@ class DishAdmin(admin.ModelAdmin):
         'get_formatted_price',
         'total_calories',
         'is_active',
+        'diet_type',
         'created_at'
     )
     list_display_links = ('name', 'image_preview')
-    list_filter = ('is_gluten_free', 'is_vegan', 'is_vegetarian', 'is_active', 'created_at')
+    list_filter = ('diet_type', 'is_active', 'created_at')
     search_fields = ('name', 'description')
     list_editable = ('is_active',)
     readonly_fields = ('created_at', 'total_calories', 'total_price', 'image_preview', 'get_formatted_price')
@@ -80,7 +81,7 @@ class DishAdmin(admin.ModelAdmin):
             'fields': ('name', 'description', 'image', 'image_preview', 'get_formatted_price', 'total_calories')
         }),
         ('Диетические свойства', {
-            'fields': ('is_gluten_free', 'is_vegan', 'is_vegetarian'),
+            'fields': ('diet_type',),
             'classes': ('collapse',)
         }),
         ('Статус', {
@@ -188,7 +189,7 @@ class MealTariffAdmin(admin.ModelAdmin):
         'allergy_nuts',
         'allergy_dairy',
     )
-    search_fields = ('user_profile__user__username',)
+    search_fields = ('user__username',)
     list_select_related = ('user',)
 
     @admin.display(description='Есть аллергии')

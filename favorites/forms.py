@@ -10,11 +10,13 @@ class MealTariffForm(forms.ModelForm):
     class Meta:
         model = MealTariff
         fields = [
+            'diet_type',
             'name', 'period', 'persons',
             'breakfast', 'lunch', 'dinner', 'desserts',
             'allergy_fish', 'allergy_meat', 'allergy_grains', 'allergy_honey', 'allergy_nuts', 'allergy_dairy'
         ]
         widgets = {
+            'diet_type': forms.Select(attrs={'class': 'form-select'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название тарифа'}),
             'period': forms.Select(attrs={'class': 'form-select'}),
             'persons': forms.Select(attrs={'class': 'form-select'}),

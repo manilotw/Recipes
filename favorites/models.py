@@ -49,9 +49,15 @@ class Dish(models.Model):
         editable=False
     )
 
-    is_gluten_free = models.BooleanField(default=False, verbose_name='Без глютена')
-    is_vegan = models.BooleanField(default=False, verbose_name='Веганское')
-    is_vegetarian = models.BooleanField(default=False, verbose_name='Вегетарианское')
+    DIET_CHOICES = [
+        ('CLASSIC', 'Классическое'),
+        ('LOW_CARB', 'Низкоуглеводное'),
+        ('VEGETARIAN', 'Вегетарианское'),
+        ('KETO', 'Кето'),
+    ]
+
+    # which diet this dish belongs to — aligns with menu options a user can choose
+    diet_type = models.CharField(max_length=20, choices=DIET_CHOICES, default='CLASSIC', verbose_name='Тип меню')
 
     total_calories = models.PositiveIntegerField(
         verbose_name='Общая калорийность (ккал)',
@@ -139,7 +145,8 @@ class DishIngredient(models.Model):
 
 class MealTariff(models.Model):
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    # enforce one tariff per user at DB level
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_tariff')
 
     PERIOD_CHOICES = [
         ('1m', '1 month'),
@@ -151,6 +158,16 @@ class MealTariff(models.Model):
     name = models.CharField(max_length=100, default='Standard Plan', verbose_name='Название тарифа')
     period = models.CharField(max_length=2, choices=PERIOD_CHOICES, default='1m', verbose_name='Срок')
     persons = models.PositiveIntegerField(default=1, verbose_name='Количество персон')
+
+    DIET_CHOICES = [
+        ('CLASSIC', 'Классическое'),
+        ('LOW_CARB', 'Низкоуглеводное'),
+        ('VEGETARIAN', 'Вегетарианское'),
+        ('KETO', 'Кето'),
+    ]
+
+    # which menu type the user selected when creating this tariff
+    diet_type = models.CharField(max_length=20, choices=DIET_CHOICES, default='CLASSIC', verbose_name='Тип меню')
 
     # Включенные приёмы пищи
     breakfast = models.BooleanField(default=False, verbose_name='Завтраки')
