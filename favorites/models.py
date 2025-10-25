@@ -38,7 +38,7 @@ class Dish(models.Model):
 
     name = models.CharField(max_length=200, verbose_name='Название')
     description = models.TextField(verbose_name='Описание')
-    # store uploaded images under MEDIA_ROOT/img/ to avoid nesting 'media/media/' paths
+    recipe = models.TextField(verbose_name='Рецепт')
     image = models.ImageField(upload_to='img/', verbose_name='Изображение')
 
     total_price = models.DecimalField(

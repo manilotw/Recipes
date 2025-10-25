@@ -110,7 +110,10 @@
                                     {% for dish in dishes %}
                                         <div class="row mb-3">
                                             <div class="col-2">
-                                                <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="w-100">
+                                                <a href="{% url 'card' pk=dish.pk %}">
+                                                    <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="w-100">
+                                                </a>
+                                                
                                             </div>
                                             <div class="col-10 col-md-10">
                                                 <div class="row">

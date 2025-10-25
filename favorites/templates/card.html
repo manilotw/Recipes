@@ -33,25 +33,21 @@
                     </div>
                     <div class="col-12 col-md-8 d-flex flex-column justify-content-between">
                         <div class="row">
-                            <h2>Название рецепта</h2>
+                            <h2>{{ dish.name }}</h2>
                             <div class="col-12 col-sm-6 d-flex flex-column justify-content-between">
-                                <h6>Описание рецепта Lorem ipsum dolor sit amet consectetur adipisicing elit. Excepturi eius nemo voluptatum minus
-                                    facilis blanditiis ut architecto rem maiores, aperiam aut debitis repellat quod voluptates natus, laboriosam hic
-                                    adipisci non.</h6>
-                                <h6>Рецепт рецепт Lorem ipsum dolor sit amet consectetur adipisicing elit. Excepturi eius nemo voluptatum minus
-                                    facilis blanditiis ut architecto rem maiores, aperiam aut debitis repellat quod voluptates natus, laboriosam hic
-                                    adipisci non.</h6>
+                                <h6>{{ dish.description }}</h6>
+                                <h6>Рецепт: {{ dish.recipe }}</h6> <!-- Рецепт, если есть -->
                             </div>
                             <div class="col-12 col-sm-6">
                                 <small class="link-secondary">Ингредиенты:</small>
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item disabled"><small>ингредиент (500г.)</small></li>
-                                    <li class="list-group-item disabled"><small>ингредиент (500г.)</small></li>
-                                    <li class="list-group-item disabled"><small>ингредиент (500г.)</small></li>
-                                    <li class="list-group-item disabled"><small>ингредиент (500г.)</small></li>
-                                    <li class="list-group-item disabled"><small>ингредиент (500г.)</small></li>
+                                    {% for dish_ingredient in dish.dish_ingredients.all %}
+                                        <li class="list-group-item disabled">
+                                            <small>{{ dish_ingredient.ingredient.name }} ({{ dish_ingredient.quantity }} {{ dish_ingredient.ingredient.get_unit_display }})</small>
+                                        </li>
+                                    {% endfor %}
                                 </ul>
-                                <small class="link-secondary">Общая калорийность: 1000 ккал</small>
+                                <small class="link-secondary">Общая калорийность: {{ dish.total_calories }} ккал</small>
                             </div>
                         </div>
                     </div>
