@@ -78,7 +78,7 @@ class DishAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'total_calories', 'total_price', 'image_preview', 'get_formatted_price')
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name', 'description', 'image', 'image_preview', 'get_formatted_price', 'total_calories')
+            'fields': ('name', 'description', 'recipe', 'image', 'image_preview', 'get_formatted_price', 'total_calories')
         }),
         ('Диетические свойства', {
             'fields': ('diet_type',),
