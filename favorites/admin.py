@@ -140,30 +140,6 @@ class IngredientAdmin(admin.ModelAdmin):
     get_dishes_count.short_description = 'Используется в блюдах'
 
 
-@admin.register(DishIngredient)
-class DishIngredientAdmin(admin.ModelAdmin):
-    list_display = ('dish', 'ingredient', 'quantity', 'get_unit', 'get_price_contribution', 'get_calories_contribution')
-    list_filter = ('dish', 'ingredient')
-    search_fields = ('dish__name', 'ingredient__name')
-
-    def get_unit(self, obj):
-        return obj.ingredient.unit
-    get_unit.short_description = 'Ед. изм.'
-
-    def get_price_contribution(self, obj):
-        if obj.ingredient.average_price and obj.quantity:
-            price = obj.ingredient.average_price * obj.quantity
-            return format_currency(price)
-        return '0 ₽'
-    get_price_contribution.short_description = 'Стоимость'
-
-    def get_calories_contribution(self, obj):
-        if obj.ingredient.calories and obj.quantity:
-            calories = obj.ingredient.calories * obj.quantity
-            return f'{int(calories)} ккал'
-        return '0 ккал'
-    get_calories_contribution.short_description = 'Калорийность'
-
 @admin.register(MealTariff)
 class MealTariffAdmin(admin.ModelAdmin):
     list_display = (
