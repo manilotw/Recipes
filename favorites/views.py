@@ -9,6 +9,7 @@ from .forms import UserUpdateForm, MealTariffForm
 from django import forms
 from .models import MealTariff
 from .models import UserProfile
+from django.http import Http404
 
 
 def index(request):
@@ -16,13 +17,15 @@ def index(request):
 
 
 def card(request, pk):
-    
-    dish = get_object_or_404(Dish, pk=pk)
-    
+    try:
+        dish = get_object_or_404(Dish, pk=pk)
+    except Http404:
+
+        return redirect('favorites:lk')  
+
     context = {
         'dish': dish
     }
-    
     return render(request, 'card.html', context)
 
 
