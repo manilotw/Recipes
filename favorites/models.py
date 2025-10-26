@@ -11,17 +11,26 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     diet_type = models.CharField(max_length=20, choices=[
-        ('GLUTEN_FREE', 'Без глютена'),
-        ('VEGAN', 'Веган'),
-        ('VEGETARIAN', 'Вегетарианец'),
-        ('NONE', 'Нет ограничений'),
-    ], default='NONE', verbose_name='Тип диеты')
+        ('CLASSIC', 'Классическое'),
+        ('LOW_CARB', 'Низкоуглеводное'), 
+        ('VEGETARIAN', 'Вегетарианское'),
+        ('KETO', 'Кето'),
+    ], default='CLASSIC', verbose_name='Тип меню')
 
     weekly_budget = models.DecimalField(
         max_digits=8,
         decimal_places=2,
         default=2000.00,
         help_text='Недельный бюджет на продукты в рублях'
+    )
+
+    max_dish_price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Макс. цена за блюдо',
+        help_text='Если установлено, показываются только блюда дешевле этой цены'
     )
 
     meal_swaps_remaining = models.PositiveIntegerField(default=3, verbose_name='Количество замен')
@@ -44,6 +53,15 @@ class UserProfile(models.Model):
             self.save()
             return True
         return False
+
+    def get_daily_budget(self):
+        return self.weekly_budget / 7
+
+    def set_auto_max_price(self):
+        daily_budget = self.get_daily_budget()
+
+        self.max_dish_price = daily_budget / 3
+        self.save()
 
 
 class Dish(models.Model):
@@ -82,6 +100,13 @@ class Dish(models.Model):
         default=0,
         help_text='Автоматически рассчитывается из ингредиентов',
         editable=False
+    )
+
+    meal_type = models.CharField(
+        max_length=20,
+        choices=MEAL_TYPES,
+        verbose_name='Тип приема пищи',
+        default='LUNCH'
     )
 
     is_active = models.BooleanField(default=True, verbose_name='Активно')
@@ -203,22 +228,6 @@ class MealTariff(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.get_period_display()})'
-
-
-class UserDailyMenu(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_menus')
-    date = models.DateField(auto_now_add=True, verbose_name='Дата меню')
-    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, verbose_name='Блюдо')
-    meal_type = models.CharField(max_length=20, choices=Dish.MEAL_TYPES, verbose_name='Тип приема пищи')
-    is_active = models.BooleanField(default=True, verbose_name='Активно')
-
-    class Meta:
-        unique_together = ['user', 'date', 'meal_type']
-        verbose_name = 'Ежедневное меню пользователя'
-        verbose_name_plural = 'Ежедневные меню пользователей'
-
-    def __str__(self):
-        return f'{self.user.username} - {self.date} - {self.get_meal_type_display()}'
 
 
 @receiver([post_save, post_delete], sender=DishIngredient)

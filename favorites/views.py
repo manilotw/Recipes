@@ -11,9 +11,8 @@ from .models import MealTariff
 from .models import UserProfile
 from django.http import Http404
 from django.utils import timezone
-from datetime import timedelta
 import random
-from .models import UserDailyMenu
+from django.core.cache import cache
 
 
 def index(request):
@@ -107,13 +106,13 @@ def logout_view(request):
     return redirect('favorites:auth')
 
 
-def get_or_create_daily_menu(user, user_tariff):
+def get_daily_menu_for_user(user, user_tariff, max_price=None):
     today = timezone.now().date()
+    cache_key = f"daily_menu_{user.id}_{today}"
 
-    daily_menus = UserDailyMenu.objects.filter(user=user, date=today)
-
-    if daily_menus.exists():
-        return daily_menus
+    menu = cache.get(cache_key)
+    if menu:
+        return menu
 
     meal_types = []
     if user_tariff.breakfast:
@@ -125,76 +124,60 @@ def get_or_create_daily_menu(user, user_tariff):
     if user_tariff.desserts:
         meal_types.append('SNACK')
 
-    dishes = get_filtered_dishes(user_tariff)
-
+    menu = {}
     for meal_type in meal_types:
-        meal_dishes = dishes.filter(dish_ingredients__isnull=False).distinct()
+        dishes = get_filtered_dishes(user_tariff, meal_type, max_price)
+        if dishes.exists():
+            menu[meal_type] = random.choice(list(dishes))
 
-        if meal_dishes.exists():
-            random_dish = random.choice(list(meal_dishes))
-            UserDailyMenu.objects.create(
-                user=user,
-                date=today,
-                dish=random_dish,
-                meal_type=meal_type
-            )
-    return UserDailyMenu.objects.filter(user=user, date=today)
+    cache.set(cache_key, menu, 60 * 60 * 24)
+    return menu
 
 
-def get_filtered_dishes(user_tariff):
-
+def get_filtered_dishes(user_tariff, meal_type=None, max_price=None):
     dishes = Dish.objects.filter(is_active=True, diet_type=user_tariff.diet_type)
 
+    if meal_type:
+        dishes = dishes.filter(meal_type=meal_type)
+
+    if max_price:
+        dishes = dishes.filter(total_price__lte=max_price)
+
     if user_tariff.allergy_fish:
-        dishes = dishes.exclude(name__icontains='Рыба')
+        dishes = dishes.exclude(name__icontains='рыб')
     if user_tariff.allergy_meat:
-        dishes = dishes.exclude(name__icontains='Мясо')
+        dishes = dishes.exclude(name__icontains='мяс')
     if user_tariff.allergy_grains:
-        dishes = dishes.exclude(name__icontains='Зерн')
+        dishes = dishes.exclude(name__icontains='зерн')
     if user_tariff.allergy_honey:
-        dishes = dishes.exclude(name__icontains='Мед')
+        dishes = dishes.exclude(name__icontains='мед')
     if user_tariff.allergy_nuts:
-        dishes = dishes.exclude(name__icontains='Орех')
+        dishes = dishes.exclude(name__icontains='орех')
     if user_tariff.allergy_dairy:
-        dishes = dishes.exclude(name__icontains='Молоко')
+        dishes = dishes.exclude(name__icontains='молок')
 
     return dishes
 
 
-def replace_dish(request, meal_type):
-    if request.method == 'POST':
-        user_profile = UserProfile.objects.get(user=request.user)
+def replace_dish_in_menu(user, user_tariff, meal_type, max_price=None):
+    today = timezone.now().date()
+    cache_key = f"daily_menu_{user.id}_{today}"
 
-        reset_user_swaps(user_profile)
+    menu = cache.get(cache_key) or {}
 
-        if user_profile.meal_swaps_remaining <= 0:
-            messages.error(request, 'У вас не осталось доступных замен')
-            return redirect('favorites:lk')
+    dishes = get_filtered_dishes(user_tariff, meal_type, max_price)
 
-        today = timezone.now().date()
-        user_tariff = MealTariff.objects.get(user=request.user)
+    current_dish = menu.get(meal_type)
+    if current_dish:
+        dishes = dishes.exclude(pk=current_dish.pk)
 
-        try:
-            daily_menu = UserDailyMenu.objects.get(
-                user=request.user,
-                date=today,
-                meal_type=meal_type
-            )
+    if dishes.exists():
+        new_dish = random.choice(list(dishes))
+        menu[meal_type] = new_dish
+        cache.set(cache_key, menu, 60 * 60 * 24)
+        return new_dish
 
-            dishes = get_filtered_dishes(user_tariff)
-            if dishes.exists():
-                new_dish = random.choice(list(dishes))
-                daily_menu.dish = new_dish
-                daily_menu.save()
-
-                user_profile.meal_swaps_remaining -= 1
-                user_profile.save()
-                messages.success(request, f'Блюдо для {daily_menu.get_meal_type_display()} успешно заменено!')
-            else:
-                messages.error(request, 'Не найдено подходящих блюд для замены')
-        except UserDailyMenu.DoesNotExist:
-            messages.error(request, 'Меню не найдено')
-    return redirect('favorites:lk')
+    return None
 
 
 def reset_user_swaps(user_profile):
@@ -209,6 +192,37 @@ def lk(request):
             request.user.first_name = new_first_name
             request.user.save()
             messages.success(request, 'Имя успешно изменено!')
+
+        if 'reset_price' in request.POST:
+            user_profile = UserProfile.objects.get(user=request.user)
+            user_profile.max_dish_price = None
+            user_profile.save()
+            messages.success(request, 'Фильтр цены сброшен!')
+
+            today = timezone.now().date()
+            cache_key = f"daily_menu_{request.user.id}_{today}"
+            cache.delete(cache_key)
+
+            return redirect('favorites:lk')
+
+        max_price = request.POST.get('max_price')
+        if max_price is not None:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                if max_price.strip():
+                    user_profile.max_dish_price = float(max_price)
+                    messages.success(request, 'Настройки цены обновлены!')
+                else:
+                    user_profile.max_dish_price = None
+                    messages.success(request, 'Фильтр цены сброшен!')
+                user_profile.save()
+
+                today = timezone.now().date()
+                cache_key = f"daily_menu_{request.user.id}_{today}"
+                cache.delete(cache_key)
+            except ValueError:
+                messages.error(request, 'Неверное значение цены')
+
         return redirect('favorites:lk')
 
     if not MealTariff.objects.filter(user=request.user).exists():
@@ -217,31 +231,53 @@ def lk(request):
     user_tariff = MealTariff.objects.get(user=request.user)
     user_profile = UserProfile.objects.get_or_create(user=request.user)[0]
 
-    daily_menus = get_or_create_daily_menu(request.user, user_tariff)
+    reset_user_swaps(user_profile)
+
+    daily_menu = get_daily_menu_for_user(request.user, user_tariff, user_profile.max_dish_price)
 
     menu_by_meal_type = {}
-    for menu in daily_menus:
-        if menu.meal_type not in menu_by_meal_type:
-            menu_by_meal_type[menu.meal_type] = []
-        menu_by_meal_type[menu.meal_type].append(menu)
+    for meal_type, dish in daily_menu.items():
+        if meal_type not in menu_by_meal_type:
+            menu_by_meal_type[meal_type] = []
 
-    max_price = request.GET.get('max_price')
-    if max_price:
-        try:
-            max_price = float(max_price)
-            for meal_type in menu_by_meal_type:
-                menu_by_meal_type[meal_type] = [
-                    menu for menu in menu_by_meal_type[meal_type]
-                    if menu.dish.total_price <= max_price
-                ]
-        except ValueError:
-            pass
+        menu_by_meal_type[meal_type].append({
+            'dish': dish,
+            'meal_type': meal_type
+        })
 
     context = {
         'menu_by_meal_type': menu_by_meal_type,
         'user': request.user,
         'user_profile': user_profile,
         'user_tariff': user_tariff,
-        'today': timezone.now().date()
+        'today': timezone.now().date(),
     }
     return render(request, 'lk.html', context)
+
+
+def replace_dish(request, meal_type):
+    if request.method == 'POST':
+        user_profile = UserProfile.objects.get(user=request.user)
+        reset_user_swaps(user_profile)
+
+        if user_profile.meal_swaps_remaining <= 0:
+            messages.error(request, 'У вас не осталось доступных замен')
+            return redirect('favorites:lk')
+
+        user_tariff = MealTariff.objects.get(user=request.user)
+
+        new_dish = replace_dish_in_menu(
+            request.user,
+            user_tariff,
+            meal_type,
+            user_profile.max_dish_price
+        )
+
+        if new_dish:
+            user_profile.meal_swaps_remaining -= 1
+            user_profile.save()
+            messages.success(request, f'Блюдо успешно заменено!')
+        else:
+            messages.error(request, 'Не найдено подходящих блюд для замены')
+
+    return redirect('favorites:lk')

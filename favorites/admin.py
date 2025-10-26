@@ -21,22 +21,19 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name_plural = 'Дополнительная информация'
-    fields = ('diet_type', 'weekly_budget', 'meal_swaps_remaining')
+    fields = ('diet_type', 'meal_swaps_remaining', 'last_swap_reset')
+    readonly_fields = ('last_swap_reset',)
     extra = 0
 
 
 class CustomUserAdmin(UserAdmin):
     inlines = (UserProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'get_diet_type', 'get_weekly_budget', 'is_staff')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'get_diet_type', 'is_staff')
     list_filter = ('userprofile__diet_type', 'is_staff', 'is_active')
 
     def get_diet_type(self, obj):
         return obj.userprofile.diet_type
     get_diet_type.short_description = 'Диета'
-
-    def get_weekly_budget(self, obj):
-        return format_currency(obj.userprofile.weekly_budget)
-    get_weekly_budget.short_description = 'Бюджет'
 
 
 class DishIngredientInline(admin.TabularInline):
@@ -67,21 +64,22 @@ class DishAdmin(admin.ModelAdmin):
         'name',
         'get_formatted_price',
         'total_calories',
+        'meal_type',
         'is_active',
         'diet_type',
         'created_at'
     )
     list_display_links = ('name', 'image_preview')
-    list_filter = ('diet_type', 'is_active', 'created_at')
+    list_filter = ('diet_type', 'meal_type', 'is_active', 'created_at')
     search_fields = ('name', 'description')
     list_editable = ('is_active',)
     readonly_fields = ('created_at', 'total_calories', 'total_price', 'image_preview', 'get_formatted_price')
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name', 'description', 'recipe', 'image', 'image_preview', 'get_formatted_price', 'total_calories')
+            'fields': ('name', 'description', 'recipe', 'image', 'image_preview', 'get_formatted_price', 'total_calories', 'total_price')
         }),
         ('Диетические свойства', {
-            'fields': ('diet_type',),
+            'fields': ('diet_type', 'meal_type'),
             'classes': ('collapse',)
         }),
         ('Статус', {
@@ -143,14 +141,16 @@ class IngredientAdmin(admin.ModelAdmin):
 @admin.register(MealTariff)
 class MealTariffAdmin(admin.ModelAdmin):
     list_display = (
-        'get_username',
-        'period',
-        'persons',
-        'breakfast',
-        'lunch',
-        'dinner',
-        'desserts',
-        'has_allergies',
+            'get_username',
+            'name',
+            'period',
+            'persons',
+            'diet_type',
+            'breakfast',
+            'lunch',
+            'dinner',
+            'desserts',
+            'has_allergies',
     )
     list_filter = (
         'period',
@@ -182,6 +182,7 @@ class MealTariffAdmin(admin.ModelAdmin):
     def get_username(self, obj):
         return obj.user.username
     get_username.short_description = 'Пользователь'
+
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
