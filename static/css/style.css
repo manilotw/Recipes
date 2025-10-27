@@ -44,17 +44,18 @@ body {
 
 .foodplan_selected:checked ~ .img_selected {
     display: block;
+    z-index: 3;
+    background-color: rgba(145,185,62,0.12);
 }
-.foodplan_selected1:hover ~ .img_selected {
+
+/* allow hover on the label (parent) to show the highlight */
+.position-relative:hover .img_selected {
     display: block;
     border: none;
     box-shadow: 0 0 30px #91B93E;
+    z-index: 2;
 }
-.foodplan_selected:hover:not(.foodplan_selected:checked)~.img_selected {
-    display: block;
-    border: none;
-    box-shadow: 0 0 15px #91B93E;
-}
+
 .img_selected {
     display: none;
     position: absolute;
@@ -65,10 +66,11 @@ body {
     border-radius: 50%;
     border: #91B93E solid 2px;
     box-shadow: 0 0 30px #91B93E;
+    pointer-events: none;
 }
 
 .foodplan__head_bg {
-    background-image: url(img/head-bg.png);
+    background-image: url('../img/head-bg.png');
     background-repeat: no-repeat;
     background-position: right;
     background-size: contain;
@@ -80,7 +82,7 @@ body {
 }
 
 .foodplan__mobapp {
-    background-image: url(img/phone.png);
+    background-image: url('../img/phone.png');
     background-repeat: no-repeat;
     background-position: 98% 50%;
     background-size: contain;
@@ -104,7 +106,7 @@ body {
 }
 
 .foodplan__creator {
-    background-image: url(img/avatar.jpg);
+    background-image: url('../img/avatar.jpg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
@@ -228,6 +230,12 @@ body {
 .avatar__plus {
     width: 24px;
     height: 24px;
+}
+
+/* make printed recipe wrap nicely */
+.recipe {
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .nav-item__border {

@@ -38,7 +38,6 @@
                             <h2>{{ dish.name }}</h2>
                             <div class="col-12 col-sm-6 d-flex flex-column justify-content-between">
                                 <h6>{{ dish.description }}</h6>
-                                <h6>Рецепт: {{ dish.recipe }}</h6> <!-- Рецепт, если есть -->
                             </div>
                             <div class="col-12 col-sm-6">
                                 <small class="link-secondary">Ингредиенты:</small>
@@ -50,6 +49,11 @@
                                     {% endfor %}
                                 </ul>
                                 <small class="link-secondary">Общая калорийность: {{ dish.total_calories }} ккал</small>
+                            </div>
+                            <!-- move recipe to a full-width row so long recipes wrap neatly -->
+                            <div class="col-12 mt-3">
+                                <h6>Рецепт:</h6>
+                                <div class="recipe">{{ dish.recipe|linebreaksbr }}</div>
                             </div>
                         </div>
                     </div>
