@@ -10,13 +10,6 @@ from datetime import timedelta
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    diet_type = models.CharField(max_length=20, choices=[
-        ('CLASSIC', 'Классическое'),
-        ('LOW_CARB', 'Низкоуглеводное'), 
-        ('VEGETARIAN', 'Вегетарианское'),
-        ('KETO', 'Кето'),
-    ], default='CLASSIC', verbose_name='Тип меню')
-
     weekly_budget = models.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -36,7 +29,7 @@ class UserProfile(models.Model):
     meal_swaps_remaining = models.PositiveIntegerField(default=3, verbose_name='Количество замен')
 
     last_swap_reset = models.DateTimeField(
-        auto_now_add=True, 
+        auto_now_add=True,
         verbose_name='Последнее обновление замен'
     )
 
