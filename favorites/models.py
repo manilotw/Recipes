@@ -184,16 +184,8 @@ class MealTariff(models.Model):
     # enforce one tariff per user at DB level
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_tariff')
 
-    PERIOD_CHOICES = [
-        ('1m', '1 month'),
-        ('3m', '3 months'),
-        ('6m', '6 months'),
-    ]
-
     # Основные параметры
     name = models.CharField(max_length=100, default='Standard Plan', verbose_name='Название тарифа')
-    period = models.CharField(max_length=2, choices=PERIOD_CHOICES, default='1m', verbose_name='Срок')
-    persons = models.PositiveIntegerField(default=1, verbose_name='Количество персон')
 
     DIET_CHOICES = [
         ('CLASSIC', 'Классическое'),
@@ -220,7 +212,7 @@ class MealTariff(models.Model):
     allergy_dairy = models.BooleanField(default=False, verbose_name='Молочные продукты')
 
     def __str__(self):
-        return f'{self.name} ({self.get_period_display()})'
+        return f'{self.name} ({self.get_diet_type_display()})'
 
 
 @receiver([post_save, post_delete], sender=DishIngredient)
