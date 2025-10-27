@@ -57,6 +57,27 @@ class UserProfile(models.Model):
         self.save()
 
 
+class Allergy(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Название аллергена')
+    slug = models.SlugField(unique=True, verbose_name='Идентификатор')
+
+    TARIFF_FIELD_MAPPING = {
+        'fish': 'allergy_fish',
+        'meat': 'allergy_meat',
+        'grains': 'allergy_grains',
+        'honey': 'allergy_honey',
+        'nuts': 'allergy_nuts',
+        'dairy': 'allergy_dairy',
+    }
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Аллерген'
+        verbose_name_plural = 'Аллергены'
+
+
 class Dish(models.Model):
     MEAL_TYPES = [
         ('BREAKFAST', 'Завтрак'),
@@ -84,6 +105,13 @@ class Dish(models.Model):
         ('VEGETARIAN', 'Вегетарианское'),
         ('KETO', 'Кето'),
     ]
+
+    allergies = models.ManyToManyField(
+        Allergy, 
+        blank=True, 
+        verbose_name='Содержит аллергены',
+        help_text='Аллергены, которые содержатся в этом блюде'
+    )
 
     # which diet this dish belongs to — aligns with menu options a user can choose
     diet_type = models.CharField(max_length=20, choices=DIET_CHOICES, default='CLASSIC', verbose_name='Тип меню')
@@ -184,16 +212,8 @@ class MealTariff(models.Model):
     # enforce one tariff per user at DB level
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_tariff')
 
-    PERIOD_CHOICES = [
-        ('1m', '1 month'),
-        ('3m', '3 months'),
-        ('6m', '6 months'),
-    ]
-
     # Основные параметры
     name = models.CharField(max_length=100, default='Standard Plan', verbose_name='Название тарифа')
-    period = models.CharField(max_length=2, choices=PERIOD_CHOICES, default='1m', verbose_name='Срок')
-    persons = models.PositiveIntegerField(default=1, verbose_name='Количество персон')
 
     DIET_CHOICES = [
         ('CLASSIC', 'Классическое'),
@@ -220,7 +240,7 @@ class MealTariff(models.Model):
     allergy_dairy = models.BooleanField(default=False, verbose_name='Молочные продукты')
 
     def __str__(self):
-        return f'{self.name} ({self.get_period_display()})'
+        return f'{self.name} ({self.get_diet_type_display()})'
 
 
 @receiver([post_save, post_delete], sender=DishIngredient)

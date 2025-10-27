@@ -66,16 +66,18 @@ class DishAdmin(admin.ModelAdmin):
         'created_at'
     )
     list_display_links = ('name', 'image_preview')
-    list_filter = ('diet_type', 'meal_type', 'is_active', 'created_at')
+    list_filter = ('diet_type', 'meal_type', 'is_active', 'created_at', 'allergies')
     search_fields = ('name', 'description')
     list_editable = ('is_active',)
     readonly_fields = ('created_at', 'total_calories', 'total_price', 'image_preview', 'get_formatted_price')
+    filter_horizontal = ('allergies',)
+
     fieldsets = (
         ('Основная информация', {
             'fields': ('name', 'description', 'recipe', 'image', 'image_preview', 'get_formatted_price', 'total_calories', 'total_price')
         }),
         ('Диетические свойства', {
-            'fields': ('diet_type', 'meal_type'),
+            'fields': ('diet_type', 'meal_type', 'allergies'),
             'classes': ('collapse',)
         }),
         ('Статус', {
@@ -138,9 +140,6 @@ class IngredientAdmin(admin.ModelAdmin):
 class MealTariffAdmin(admin.ModelAdmin):
     list_display = (
             'get_username',
-            'name',
-            'period',
-            'persons',
             'diet_type',
             'breakfast',
             'lunch',
@@ -149,7 +148,6 @@ class MealTariffAdmin(admin.ModelAdmin):
             'has_allergies',
     )
     list_filter = (
-        'period',
         'breakfast',
         'lunch',
         'dinner',
@@ -161,6 +159,23 @@ class MealTariffAdmin(admin.ModelAdmin):
         'allergy_nuts',
         'allergy_dairy',
     )
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('user', 'diet_type')
+        }),
+        ('Приёмы пищи', {
+            'fields': ('breakfast', 'lunch', 'dinner', 'desserts')
+        }),
+        ('Аллергии', {
+            'fields': (
+                'allergy_fish', 'allergy_meat', 'allergy_grains',
+                'allergy_honey', 'allergy_nuts', 'allergy_dairy'
+            ),
+            'classes': ('collapse',)
+        }),
+    )
+
     search_fields = ('user__username',)
     list_select_related = ('user',)
 

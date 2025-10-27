@@ -1,18 +1,15 @@
-from .models import Dish
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import CustomUserCreationForm, CustomAuthenticationForm
-from .forms import MealTariffForm
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, MealTariffForm
 from django import forms
-from .models import MealTariff
-from .models import UserProfile
+from .models import MealTariff, UserProfile, Dish, Allergy
 from django.http import Http404
 from django.utils import timezone
 import random
 from django.core.cache import cache
+from decimal import Decimal
 
 
 def index(request):
@@ -127,36 +124,68 @@ def get_daily_menu_for_user(user, user_tariff, max_price=None):
     menu = {}
     for meal_type in meal_types:
         dishes = get_filtered_dishes(user_tariff, meal_type, max_price)
-        if dishes.exists():
-            menu[meal_type] = random.choice(list(dishes))
+
+        if hasattr(dishes, 'exists') and dishes.exists():
+            selected_dish = random.choice(list(dishes))
+            menu[meal_type] = selected_dish
+            dishes_no_price_limit = get_filtered_dishes(user_tariff, meal_type, None)
+
+            if hasattr(dishes_no_price_limit, 'exists') and dishes_no_price_limit.exists():
+                selected_dish = random.choice(list(dishes_no_price_limit))
+                menu[meal_type] = selected_dish
+            else:
+                fallback_dishes = Dish.objects.filter(
+                    is_active=True,
+                    diet_type=user_tariff.diet_type,
+                    meal_type=meal_type
+                )
+                if fallback_dishes.exists():
+                    selected_dish = random.choice(list(fallback_dishes))
+                    menu[meal_type] = selected_dish
 
     cache.set(cache_key, menu, 60 * 60 * 24)
     return menu
 
 
 def get_filtered_dishes(user_tariff, meal_type=None, max_price=None):
-    dishes = Dish.objects.filter(is_active=True, diet_type=user_tariff.diet_type)
+    try:
+        dishes = Dish.objects.filter(is_active=True, diet_type=user_tariff.diet_type)
 
-    if meal_type:
-        dishes = dishes.filter(meal_type=meal_type)
+        if not hasattr(dishes, 'filter'):
+            return Dish.objects.none()
 
-    if max_price:
-        dishes = dishes.filter(total_price__lte=max_price)
+        if meal_type:
+            dishes = dishes.filter(meal_type=meal_type)
 
-    if user_tariff.allergy_fish:
-        dishes = dishes.exclude(name__icontains='рыб')
-    if user_tariff.allergy_meat:
-        dishes = dishes.exclude(name__icontains='мяс')
-    if user_tariff.allergy_grains:
-        dishes = dishes.exclude(name__icontains='зерн')
-    if user_tariff.allergy_honey:
-        dishes = dishes.exclude(name__icontains='мед')
-    if user_tariff.allergy_nuts:
-        dishes = dishes.exclude(name__icontains='орех')
-    if user_tariff.allergy_dairy:
-        dishes = dishes.exclude(name__icontains='молок')
+        if max_price is not None:
+            try:
+                max_price_decimal = Decimal(str(max_price))
+                dishes = dishes.filter(total_price__lte=max_price_decimal)
+            except (ValueError, TypeError) as e:
+                print(f"Error converting max_price to Decimal: {e}")
 
-    return dishes
+        user_allergies = []
+        if user_tariff.allergy_fish:
+            user_allergies.append('fish')
+        if user_tariff.allergy_meat:
+            user_allergies.append('meat')
+        if user_tariff.allergy_grains:
+            user_allergies.append('grains')
+        if user_tariff.allergy_honey:
+            user_allergies.append('honey')
+        if user_tariff.allergy_nuts:
+            user_allergies.append('nuts')
+        if user_tariff.allergy_dairy:
+            user_allergies.append('dairy')
+
+        if user_allergies:
+            existing_allergies = Allergy.objects.filter(slug__in=user_allergies)
+            if existing_allergies.exists():
+                dishes = dishes.exclude(allergies__in=existing_allergies)
+
+        return dishes
+    except Exception as e:
+        return Dish.objects.none()
 
 
 def replace_dish_in_menu(user, user_tariff, meal_type, max_price=None):
@@ -224,8 +253,10 @@ def lk(request):
             try:
                 user_profile = UserProfile.objects.get(user=request.user)
                 if max_price.strip():
-                    user_profile.max_dish_price = float(max_price)
-                    messages.success(request, 'Настройки цены обновлены!')
+                    max_price_value = float(max_price)
+                    user_profile.max_dish_price = max_price_value
+                    messages.success(request, f'Настройки цены обновлены! Будут показаны блюда до {max_price_value} руб.')
+                    print(f"DEBUG: Установлена максимальная цена: {max_price_value}")
                 else:
                     user_profile.max_dish_price = None
                     messages.success(request, 'Фильтр цены сброшен!')
@@ -234,6 +265,8 @@ def lk(request):
                 today = timezone.now().date()
                 cache_key = f"daily_menu_{request.user.id}_{today}"
                 cache.delete(cache_key)
+                print(f"DEBUG: Кеш очищен для пользователя {request.user.id}")
+
             except ValueError:
                 messages.error(request, 'Неверное значение цены')
 
