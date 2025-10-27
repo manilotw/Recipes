@@ -66,16 +66,18 @@ class DishAdmin(admin.ModelAdmin):
         'created_at'
     )
     list_display_links = ('name', 'image_preview')
-    list_filter = ('diet_type', 'meal_type', 'is_active', 'created_at')
+    list_filter = ('diet_type', 'meal_type', 'is_active', 'created_at', 'allergies')
     search_fields = ('name', 'description')
     list_editable = ('is_active',)
     readonly_fields = ('created_at', 'total_calories', 'total_price', 'image_preview', 'get_formatted_price')
+    filter_horizontal = ('allergies',)
+
     fieldsets = (
         ('Основная информация', {
             'fields': ('name', 'description', 'recipe', 'image', 'image_preview', 'get_formatted_price', 'total_calories', 'total_price')
         }),
         ('Диетические свойства', {
-            'fields': ('diet_type', 'meal_type'),
+            'fields': ('diet_type', 'meal_type', 'allergies'),
             'classes': ('collapse',)
         }),
         ('Статус', {

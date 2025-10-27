@@ -1,14 +1,10 @@
-from .models import Dish
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import CustomUserCreationForm, CustomAuthenticationForm
-from .forms import MealTariffForm
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, MealTariffForm
 from django import forms
-from .models import MealTariff
-from .models import UserProfile
+from .models import MealTariff, UserProfile, Allergy, Dish
 from django.http import Http404
 from django.utils import timezone
 import random
@@ -126,7 +122,7 @@ def get_daily_menu_for_user(user, user_tariff, max_price=None):
 
     menu = {}
     for meal_type in meal_types:
-        dishes = get_filtered_dishes(user_tariff, meal_type, max_price)
+        dishes = (user_tariff, meal_type, max_price)
         if dishes.exists():
             menu[meal_type] = random.choice(list(dishes))
 
@@ -143,18 +139,22 @@ def get_filtered_dishes(user_tariff, meal_type=None, max_price=None):
     if max_price:
         dishes = dishes.filter(total_price__lte=max_price)
 
+    user_allergies = []
     if user_tariff.allergy_fish:
-        dishes = dishes.exclude(name__icontains='рыб')
+        user_allergies.append('fish')
     if user_tariff.allergy_meat:
-        dishes = dishes.exclude(name__icontains='мяс')
+        user_allergies.append('meat')
     if user_tariff.allergy_grains:
-        dishes = dishes.exclude(name__icontains='зерн')
+        user_allergies.append('grains')
     if user_tariff.allergy_honey:
-        dishes = dishes.exclude(name__icontains='мед')
+        user_allergies.append('honey')
     if user_tariff.allergy_nuts:
-        dishes = dishes.exclude(name__icontains='орех')
+        user_allergies.append('nuts')
     if user_tariff.allergy_dairy:
-        dishes = dishes.exclude(name__icontains='молок')
+        user_allergies.append('dairy')
+
+    if user_allergies:
+        dishes = dishes.exclude(allergies__slug__in=user_allergies)
 
     return dishes
 

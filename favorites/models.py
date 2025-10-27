@@ -57,6 +57,27 @@ class UserProfile(models.Model):
         self.save()
 
 
+class Allergy(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Название аллергена')
+    slug = models.SlugField(unique=True, verbose_name='Идентификатор')
+
+    TARIFF_FIELD_MAPPING = {
+        'fish': 'allergy_fish',
+        'meat': 'allergy_meat',
+        'grains': 'allergy_grains',
+        'honey': 'allergy_honey',
+        'nuts': 'allergy_nuts',
+        'dairy': 'allergy_dairy',
+    }
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Аллерген'
+        verbose_name_plural = 'Аллергены'
+
+
 class Dish(models.Model):
     MEAL_TYPES = [
         ('BREAKFAST', 'Завтрак'),
@@ -84,6 +105,13 @@ class Dish(models.Model):
         ('VEGETARIAN', 'Вегетарианское'),
         ('KETO', 'Кето'),
     ]
+
+    allergies = models.ManyToManyField(
+        Allergy, 
+        blank=True, 
+        verbose_name='Содержит аллергены',
+        help_text='Аллергены, которые содержатся в этом блюде'
+    )
 
     # which diet this dish belongs to — aligns with menu options a user can choose
     diet_type = models.CharField(max_length=20, choices=DIET_CHOICES, default='CLASSIC', verbose_name='Тип меню')
