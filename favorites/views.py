@@ -205,6 +205,20 @@ def lk(request):
 
             return redirect('favorites:lk')
 
+        new_diet_type = request.POST.get('diet_type')
+        if new_diet_type:
+            user_tariff = MealTariff.objects.get(user=request.user)
+            if user_tariff.diet_type != new_diet_type:
+                user_tariff.diet_type = new_diet_type
+                user_tariff.save()
+                messages.success(request, f'Тип диеты изменен на {user_tariff.get_diet_type_display()}!')
+
+                today = timezone.now().date()
+                cache_key = f"daily_menu_{request.user.id}_{today}"
+                cache.delete(cache_key)
+
+            return redirect('favorites:lk')
+
         max_price = request.POST.get('max_price')
         if max_price is not None:
             try:

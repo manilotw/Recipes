@@ -21,19 +21,15 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name_plural = 'Дополнительная информация'
-    fields = ('diet_type', 'meal_swaps_remaining', 'last_swap_reset')
+    fields = ('meal_swaps_remaining', 'last_swap_reset')
     readonly_fields = ('last_swap_reset',)
     extra = 0
 
 
 class CustomUserAdmin(UserAdmin):
     inlines = (UserProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'get_diet_type', 'is_staff')
-    list_filter = ('userprofile__diet_type', 'is_staff', 'is_active')
-
-    def get_diet_type(self, obj):
-        return obj.userprofile.diet_type
-    get_diet_type.short_description = 'Диета'
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+    list_filter = ('is_staff', 'is_active')
 
 
 class DishIngredientInline(admin.TabularInline):

@@ -89,6 +89,24 @@
                                         <input type="email" class="form-control" id="email" value="{{ user.email }}" readonly>
                                     </div>
                                     <div class="mb-3">
+                                        <label for="diet_type" class="form-label">Тип диеты</label>
+                                        <select class="form-select" id="diet_type" name="diet_type">
+                                            <option value="CLASSIC" {% if user_tariff.diet_type == 'CLASSIC' %}selected{% endif %}>
+                                                Классическое
+                                            </option>
+                                            <option value="LOW_CARB" {% if user_tariff.diet_type == 'LOW_CARB' %}selected{% endif %}>
+                                                Низкоуглеводное
+                                            </option>
+                                            <option value="VEGETARIAN" {% if user_tariff.diet_type == 'VEGETARIAN' %}selected{% endif %}>
+                                                Вегетарианское
+                                            </option>
+                                            <option value="KETO" {% if user_tariff.diet_type == 'KETO' %}selected{% endif %}>
+                                                Кето
+                                            </option>
+                                        </select>
+                                        <small class="text-muted">При смене диеты меню автоматически обновится</small>
+                                    </div>
+                                    <div class="mb-3">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <label for="password" class="form-label">Пароль</label>
                                         </div>
