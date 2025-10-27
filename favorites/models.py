@@ -4,6 +4,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
 from django.utils import timezone
+from django.core.cache import cache
 from datetime import timedelta
 
 
@@ -264,3 +265,20 @@ def save_user_profile(sender, instance, **kwargs):
         instance.userprofile.save()
     else:
         UserProfile.objects.get_or_create(user=instance)
+
+
+# invalidate cached daily menus when dishes or allergens change so users see updates immediately
+@receiver([post_save, post_delete], sender=Dish)
+def invalidate_cache_on_dish_change(sender, instance, **kwargs):
+    try:
+        cache.clear()
+    except Exception:
+        pass
+
+
+@receiver([post_save, post_delete], sender=Allergy)
+def invalidate_cache_on_allergy_change(sender, instance, **kwargs):
+    try:
+        cache.clear()
+    except Exception:
+        pass

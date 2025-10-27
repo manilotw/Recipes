@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
-from .models import UserProfile, Dish, Ingredient, DishIngredient, MealTariff
+from .models import UserProfile, Dish, Ingredient, DishIngredient, MealTariff, Allergy
 
 
 def format_currency(value):
@@ -197,3 +197,10 @@ class MealTariffAdmin(admin.ModelAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(Allergy)
+class AllergyAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'slug')
